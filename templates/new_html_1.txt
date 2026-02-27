@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Invoice Data Extractor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .file-input-wrapper:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .upload-info {
+            margin-top: 15px;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .preview-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .pdf-viewer {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+            display: block;
+            margin: 0 auto;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+        }
+
+        .submit-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-section {
+            display: none;
+            margin-top: 30px;
+            padding: 30px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #10b981;
+        }
+
+        .success-message {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .data-preview {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .reset-btn {
+            background: #6b7280;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn:hover {
+            background: #4b5563;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .pdf-viewer {
+                height: 400px;
+            }
+        }
+
+/* Add to your CSS */
+ #errorMsg {
+    color: red;
+    background: #ffe6e6;
+    padding: 10px;
+    border: 1px solid red;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    border-radius: 5px;
+    animation: fadein 0.3s ease-in-out;
+    text-align: center;
+}
+
+@keyframes fadein {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 PDF Invoice Extractor</h1>
+            <p>Upload your PDF invoice and extract structured data effortlessly</p>
+        </div>
+
+        <div class="content">
+
+            <!-- Upload Section -->
+            <div class="upload-section" id="uploadSection">
+                <label for="pdfFile" class="file-input-wrapper">
+                    <input type="file" id="pdfFile" accept=".pdf,image/png,image/jpeg" />
+                    📁 Choose PDF File
+                </label>
+                <div class="upload-info">
+                    <p>Select a PDF or image (PNG/JPG) to preview and extract data</p>
+                    <small>Supported formats: PDF, PNG, JPG</small>
+                </div>
+            </div>
+
+            <!-- Loading Animation -->
+            <div class="loading" id="loadingSection">
+                <div class="spinner"></div>
+                <p>Processing your PDF...</p>
+            </div>
+
+            <!-- PDF Preview Section -->
+            <div class="preview-section" id="previewSection">
+                <h2 class="section-title">📖 PDF Preview</h2>
+                <embed id="pdfViewer" class="pdf-viewer" type="application/pdf">
+                <div id="errorMsg" style="display:none; color:red;"></div>
+                <div style="text-align: center;">
+                    <button class="submit-btn" id="submitBtn">🚀 Extract Data</button>
+                    <button class="reset-btn" id="resetBtn">🔄 Upload New File</button>
+                </div>
+                 
+            </div>
+
+            <!-- Results Section -->
+            <div class="result-section" id="resultSection">
+                <h2 class="section-title">✅ Extraction Results</h2>
+                <div id="messageContainer"></div>
+                <div class="data-preview" id="dataPreview"  ></div>
+                <div style="text-align: center;">
+                    <button class="download-btn" id="downloadBtn" style="display: none;">
+                        💾 Download JSON File
+                    </button>
+                    <button class="reset-btn" id="resetBtn2">🔄 Process Another File</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFilename = null;
+        let savedFilename = null;
+        let currentOriginalFilename = null;  // Add this variable at the top
+
+        document.getElementById('pdfFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+
+        const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg'];
+        if (file && allowedTypes.includes(file.type)) {
+            uploadPDF(file);
+        } else {
+            showError('Please select a valid PDF, PNG, or JPG file.');
+        }
+            });
+
+    
+        // Submit button handler
+        document.getElementById('submitBtn').addEventListener('click', function() {
+            if (currentFilename) {
+                extractData();
+            }
+        });
+
+        // Reset button handlers
+        document.getElementById('resetBtn').addEventListener('click', resetForm);
+        document.getElementById('resetBtn2').addEventListener('click', resetForm);
+
+        // Download button handler
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            if (savedFilename) {
+                window.open(`/download/${savedFilename}`, '_blank');
+            }
+        });
+
+function uploadPDF(file) {
+    showLoading(true); // Show loading indicator
+
+    const formData = new FormData();
+    formData.append('pdfFile', file); // 🔁 Must match Flask's key: 'pdfFile'
+
+    fetch('/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        showLoading(false);
+
+        if (data.success) {
+            // ✅ Store filename for use in /extract
+            currentFilename = data.filename;
+            currentOriginalFilename = data.original_filename;
+
+            // ✅ Show uploaded PDF preview
+            showPDFPreview(data.pdf_data);
+
+            // ✅ Show success message
+            showSuccess(data.message);
+        } else {
+            // ❌ Show error from backend
+            showError(data.error || 'Upload failed');
+        }
+    })
+    .catch(error => {
+        showLoading(false);
+        showError('Upload failed: ' + error.message);
+    });
+}
+
+
+  function extractData() {
+    showLoading(true);
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('errorMsg').style.display = 'none'; // Clear any previous errors
+
+    fetch('/extract', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            filename: currentFilename,
+            original_filename: currentOriginalFilename
+        })
+    })
+    .then(async response => {
+        let data;
+
+        try {
+            data = await response.json();
+        } catch (e) {
+            data = { error: 'Invalid response from server.' };
+        }
+
+        showLoading(false);
+        document.getElementById('submitBtn').disabled = false;
+
+        if (!response.ok || data.success === false) {
+            // Handle both status-based and content-based errors
+            showError(data.error || 'Extraction failed.');
+            return;
+        }
+
+        // Success
+        savedFilename = data.saved_file;
+        showResults(data, data.message);
+    })
+    .catch(error => {
+        showLoading(false);
+        document.getElementById('submitBtn').disabled = false;
+        showError('Extraction failed: ' + error.message);
+    });
+}
+
+        function showPDFPreview(pdfData) {
+            const pdfViewer = document.getElementById('pdfViewer');
+            pdfViewer.src = `data:application/pdf;base64,${pdfData}`;
+            
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('previewSection').style.display = 'block';
+            document.getElementById('resultSection').style.display = 'none';
+        }
+
+function showResults(data, message) {
+    const messageContainer = document.getElementById('messageContainer');
+    const dataPreview = document.getElementById('dataPreview');
+    
+    // ✅ Use "✅ 📧" or "❌ 📧" depending on email_sent flag
+    const emailIcon = data.email_sent ? "✅ 📧" : "❌ 📧";
+    const fullMessage = `${emailIcon} ${message}`;
+    
+    // ✅ Show message in container
+    messageContainer.innerHTML = `<div class="success-message">${fullMessage}</div>`;
+    
+    // ✅ Pretty print the extracted data
+    dataPreview.innerHTML = `<pre>${JSON.stringify(data.data, null, 2)}</pre>`;
+    
+    // ✅ Reveal download button and result section
+    document.getElementById('downloadBtn').style.display = 'inline-block';
+    document.getElementById('resultSection').style.display = 'block';
+    
+    // ✅ Smooth scroll to results
+    document.getElementById('resultSection').scrollIntoView({ 
+        behavior: 'smooth' 
+    });
+}
+
+        function showSuccess(message) {
+            // This function can be used for additional success notifications
+            console.log('Success:', message);
+        }
+
+function showError(message) {
+    const errorDiv = document.getElementById('errorMsg');
+
+    if (!errorDiv) {
+        alert(message);
+        return;
+    }
+
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+    errorDiv.style.color = 'red';
+    errorDiv.scrollIntoView({ behavior: 'smooth' });
+
+    setTimeout(() => {
+        errorDiv.style.display = 'none';
+        errorDiv.textContent = '';
+    }, 8000);
+}
+
+
+        function showLoading(show) {
+            document.getElementById('loadingSection').style.display = show ? 'block' : 'none';
+        }
+
+        function resetForm() {
+            currentFilename = null;
+            savedFilename = null;
+            
+            document.getElementById('pdfFile').value = '';
+            document.getElementById('uploadSection').style.display = 'block';
+            document.getElementById('previewSection').style.display = 'none';
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('loadingSection').style.display = 'none';
+            
+            // Remove any error messages
+            const errorMessages = document.querySelectorAll('.error-message');
+            errorMessages.forEach(error => error.remove());
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

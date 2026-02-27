@@ -1,0 +1,850 @@
+html -------------------------------------------------
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Invoice Data Extractor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .file-input-wrapper:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .upload-info {
+            margin-top: 15px;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .preview-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .pdf-viewer {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+            display: block;
+            margin: 0 auto;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+        }
+
+        .submit-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-section {
+            display: none;
+            margin-top: 30px;
+            padding: 30px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #10b981;
+        }
+
+        .success-message {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .data-preview {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .reset-btn {
+            background: #6b7280;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn:hover {
+            background: #4b5563;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .pdf-viewer {
+                height: 400px;
+            }
+        }
+
+/* Add to your CSS */
+ #errorMsg {
+    color: red;
+    background: #ffe6e6;
+    padding: 10px;
+    border: 1px solid red;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    border-radius: 5px;
+    animation: fadein 0.3s ease-in-out;
+    text-align: center;
+}
+
+@keyframes fadein {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 PDF Invoice Extractor</h1>
+            <p>Upload your PDF invoice and extract structured data effortlessly</p>
+        </div>
+
+        <div class="content">
+           
+
+            <!-- Upload Section -->
+            <div class="upload-section" id="uploadSection">
+                <label for="pdfFile" class="file-input-wrapper">
+                    <input type="file" id="pdfFile" accept="application/pdf"/>
+                    📁 Choose PDF File
+                </label>
+                <div class="upload-info">
+                    <p>Select a PDF file to preview and extract data</p>
+                    <small>Supported format: PDF files only</small>
+                </div>
+            </div>
+
+            <!-- Loading Animation -->
+            <div class="loading" id="loadingSection">
+                <div class="spinner"></div>
+                <p>Processing your PDF...</p>
+            </div>
+
+            <!-- PDF Preview Section -->
+            <div class="preview-section" id="previewSection">
+                <h2 class="section-title">📖 PDF Preview</h2>
+                <embed id="pdfViewer" class="pdf-viewer" type="application/pdf">
+                <div id="errorMsg" style="display:none; color:red;"></div>
+                <div style="text-align: center;">
+                    <button class="submit-btn" id="submitBtn">🚀 Extract Data</button>
+                    <button class="reset-btn" id="resetBtn">🔄 Upload New File</button>
+                </div>
+                 
+            </div>
+
+            <!-- Results Section -->
+            <div class="result-section" id="resultSection">
+                <h2 class="section-title">✅ Extraction Results</h2>
+                <div id="messageContainer"></div>
+                <div class="data-preview" id="dataPreview"  ></div>
+                <div style="text-align: center;">
+                    <button class="download-btn" id="downloadBtn" style="display: none;">
+                        💾 Download JSON File
+                    </button>
+                    <button class="reset-btn" id="resetBtn2">🔄 Process Another File</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFilename = null;
+        let savedFilename = null;
+        let currentOriginalFilename = null;  // Add this variable at the top
+
+        // File input handler
+        document.getElementById('pdfFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                uploadPDF(file);
+            } else {
+                showError('Please select a valid PDF file.');
+            }
+        });
+
+        // Submit button handler
+        document.getElementById('submitBtn').addEventListener('click', function() {
+            if (currentFilename) {
+                extractData();
+            }
+        });
+
+        // Reset button handlers
+        document.getElementById('resetBtn').addEventListener('click', resetForm);
+        document.getElementById('resetBtn2').addEventListener('click', resetForm);
+
+        // Download button handler
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            if (savedFilename) {
+                window.open(`/download/${savedFilename}`, '_blank');
+            }
+        });
+
+function uploadPDF(file) {
+    showLoading(true); // Show loading indicator
+
+    const formData = new FormData();
+    formData.append('pdfFile', file); // 🔁 Must match Flask's key: 'pdfFile'
+
+    fetch('/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        showLoading(false);
+
+        if (data.success) {
+            // ✅ Store filename for use in /extract
+            currentFilename = data.filename;
+            currentOriginalFilename = data.original_filename;
+
+            // ✅ Show uploaded PDF preview
+            showPDFPreview(data.pdf_data);
+
+            // ✅ Show success message
+            showSuccess(data.message);
+        } else {
+            // ❌ Show error from backend
+            showError(data.error || 'Upload failed');
+        }
+    })
+    .catch(error => {
+        showLoading(false);
+        showError('Upload failed: ' + error.message);
+    });
+}
+
+
+  function extractData() {
+    showLoading(true);
+    document.getElementById('submitBtn').disabled = true;
+
+    fetch('/extract', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            filename: currentFilename,
+            original_filename: currentOriginalFilename
+        })
+    })
+    .then(async response => {
+        let data;
+
+        try {
+            data = await response.json(); // Try to parse response JSON
+        } catch (e) {
+            data = { error: 'Invalid response from server.' };
+        }
+
+        showLoading(false);
+        document.getElementById('submitBtn').disabled = false;
+
+        if (!response.ok) {
+            // This will now show detailed Flask errors
+            showError(data.error || 'Extraction failed.');
+            return;
+        }
+
+        // Success case
+        if (data.success) {
+            savedFilename = data.saved_file;
+            showResults(data, data.message);
+        } else {
+            showError(data.error || 'Extraction failed.');
+        }
+    })
+    .catch(error => {
+        showLoading(false);
+        document.getElementById('submitBtn').disabled = false;
+        showError('Extraction failed: ' + error.message);
+    });
+}
+
+        function showPDFPreview(pdfData) {
+            const pdfViewer = document.getElementById('pdfViewer');
+            pdfViewer.src = `data:application/pdf;base64,${pdfData}`;
+            
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('previewSection').style.display = 'block';
+            document.getElementById('resultSection').style.display = 'none';
+        }
+
+function showResults(data, message) {
+    const messageContainer = document.getElementById('messageContainer');
+    const dataPreview = document.getElementById('dataPreview');
+    
+    // ✅ Use "✅ 📧" or "❌ 📧" depending on email_sent flag
+    const emailIcon = data.email_sent ? "✅ 📧" : "❌ 📧";
+    const fullMessage = `${emailIcon} ${message}`;
+    
+    // ✅ Show message in container
+    messageContainer.innerHTML = `<div class="success-message">${fullMessage}</div>`;
+    
+    // ✅ Pretty print the extracted data
+    dataPreview.innerHTML = `<pre>${JSON.stringify(data.data, null, 2)}</pre>`;
+    
+    // ✅ Reveal download button and result section
+    document.getElementById('downloadBtn').style.display = 'inline-block';
+    document.getElementById('resultSection').style.display = 'block';
+    
+    // ✅ Smooth scroll to results
+    document.getElementById('resultSection').scrollIntoView({ 
+        behavior: 'smooth' 
+    });
+}
+
+        function showSuccess(message) {
+            // This function can be used for additional success notifications
+            console.log('Success:', message);
+        }
+
+     function showError(message) {
+    // Use the #errorMsg div defined in your HTML for consistent visibility
+    const errorDiv = document.getElementById('errorMsg');
+
+    if (!errorDiv) {
+        // Fallback if errorMsg is not found
+        alert(message);
+        return;
+    }
+
+    // Clear any previous messages and display new one
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+    errorDiv.style.color = 'red';  // In case it's overridden by CSS
+
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        errorDiv.style.display = 'none';
+        errorDiv.textContent = '';
+    }, 8000);
+}
+
+        function showLoading(show) {
+            document.getElementById('loadingSection').style.display = show ? 'block' : 'none';
+        }
+
+        function resetForm() {
+            currentFilename = null;
+            savedFilename = null;
+            
+            document.getElementById('pdfFile').value = '';
+            document.getElementById('uploadSection').style.display = 'block';
+            document.getElementById('previewSection').style.display = 'none';
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('loadingSection').style.display = 'none';
+            
+            // Remove any error messages
+            const errorMessages = document.querySelectorAll('.error-message');
+            errorMessages.forEach(error => error.remove());
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+---------------------------------------------------flask-----------------------------------
+
+
+
+
+
+
+from pdf2image import convert_from_path
+import os
+from pypdf import PdfReader
+import os
+from PIL import Image
+import base64
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_google_genai import ChatGoogleGenerativeAI,GoogleGenerativeAIEmbeddings
+from langchain_core.output_parsers import JsonOutputParser
+from dotenv import load_dotenv
+import json
+import shutil
+import pandas as pd
+from flask import Flask, render_template, request, jsonify, send_file
+from werkzeug.utils import secure_filename
+import uuid
+import json
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+import base64
+import uuid
+
+load_dotenv()
+
+app = Flask(__name__)
+google_api = os.getenv('GOOGLE_API_KEY')
+
+
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@app.route('/', methods=['GET'])
+def index():
+    return render_template('New_index.html')
+
+
+# define model
+gemini_model = ChatGoogleGenerativeAI(
+        model="gemini-2.0-flash", #'gemini-2.5-pro'
+        temperature=0,
+        max_tokens=None,
+        timeout=None,
+        max_retries=1,
+        google_api_key =google_api)
+
+# define prompt for control model
+prompt_template = """You are the helpful assistgant you have to give me answer in dictionary format in dictionary
+            there will be key value pair which you will get from content provided to you.if you do not get any information from 
+            document donot need to give your own.
+            
+            Important things that you have to check before do the process:
+            1 -->   Thing you have to extract keys with values, Given Below keys are common key names  
+                    "Bill To" (Note:comapany name), its "Pan No", "Gstin No","Invoice No", "Invoice date", "buyers Order No",
+                    "Bill from" (Note:comapany name), its "Pan No", "Gstin No" 
+                    material with serial No(in invoice possible that some invoice has "SI\nNo.","Sr No.", "Item", "Sr", "S No" etc.)
+                    "HSN code" or "HSN", "Qty" or "Quantity", "Unit" or "per", "Unit Price", "Discount" or "Dis" rate, "Taxable Amt" or "Taxable Amount", "CGST rate" or "CGST %","CGST Amount",
+                    "SGST rate" or"SGST %", "SGST Amount" , "Total Amount" or "Amount" or "Line Total" or "Net Amount"
+                    Note: These are the common keys name you will get in invoice possible that few keys available ans possible that some keys name different. No need to extract description of material from material table 
+            2 --> Length of that Customer order No number must 10 this you have to check.(Note: Name can be different ex given in common key name).
+            3 --> Images formate will not be same you have to handle that  
+            4 --> In some Image, "bill from" key is not given but company name is available you have to take care of it.
+            5 --> Extract key-value pairs and for material use unique field or key name "material" return each material item as a dictionary inside a list — no separate field lists. 
+                  For every image you process, use the following standardized key names:
+                  In Image, any where TAX INVOICE or Text Invoice or tex invoice available then use key name for that 'Tax Invoice'
+                  buyer → for "Bill To", buyers pan no → for PAN under "Bill To", buyers gstin no → for GSTIN under "Bill To", buyers order number → for keys like "Customer Order Number", "Order Number", etc., 
+                  vendor → for "Bill From", vendors pan no → for PAN under "Bill From", vendor gstin no → for GSTIN under "Bill From"
+                  For material key names(Each material item must include all of the following mandatory fields using these exact key names):
+                    'sr no'-> for Sr No, SI\nNo., Sr No, Item, Sr, S No.
+                    'hsn'-> for HSN code, HSN
+                    'qty'-> Qty, Quantity
+                    'unit'-> for Unit, per, UoM(Note if this column not available then look any unit available in qty column if available then take that value else keep value as nan
+                    'unit price'-> Unit Price
+                    'taxable amt'-> for Taxable Amt,Taxable Amount,Taxable Value Currency INR
+                    'discount'-> for Discount, Dis
+                    'cgst %'-> for CGST rate, CGST % OUTPUT CGST %
+                    'cgst amount'-> for CGST Amount, Central
+                    'sgst %'-> for SGST rate, SGST %, OUTPUT SGST %
+                    'sgst amount'-> for SGST Amount, SGST
+                    'amount'-> for Amount, Line Total, Net Amount
+                  keys need to extract onetime only given below:
+                    buyer, buyers pan no, buyers gstin no, buyers order number, vendor, vendors pan no, vendor gstin no
+                  Note: No need to add extra key beyond given key
+            6 --> Sometime table does not have header then :
+                  if vendor name is Mogli Labs (India ) Pvt Ltd then if header is not available in material table then use headers: 
+                    sr no, hsn, qty, unit, unit price, taxable amt, cgst %, cgst amount, sgst %, sgst amount, amount
+                  if vendor is GHCL LTD and if found any image that does not contain header then use headers:
+                    sr no, hsn, qty, unit, unit price, discount, taxable amt, cgst %, cgst amount, sgst %, sgst amount, amount
+            """ 
+
+def image_to_text(output_dir,image_path,prompt_template):
+    ext = image_path.split('.')[-1]
+
+    with open(f'{output_dir}/{image_path}', "rb") as img_file:
+        b64_string = base64.b64encode(img_file.read()).decode('utf-8')
+
+    messages = [
+            (
+                "user",
+                [
+                    {"type": "text", "text": prompt_template},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/{ext};base64,{b64_string}"},
+                    },
+                ],
+            )
+        ]
+
+    try:
+        prompt = ChatPromptTemplate.from_messages(messages)
+        chain = prompt | gemini_model | JsonOutputParser()
+        result = chain.invoke({"b64_img": b64_string, "ext": ext})
+        return result
+
+    except Exception as e:
+        return e
+
+def pdf_to_text(pdf_path,file_name):
+    upload_path = os.path.join('uploads',file_name)
+    if pdf_path.endswith('pdf'):
+        # Output directory for images
+        os.path.basename(pdf_path)
+        output_dir = os.path.basename(pdf_path).split('.')[0]
+        os.makedirs(output_dir, exist_ok=True)
+
+        # Convert PDF to list of images (one per page)
+        images = convert_from_path(pdf_path, dpi=300)
+        
+        # Save each page as a JPEG file
+        for i, image in enumerate(images):
+            image_path = os.path.join(output_dir, f"{output_dir}_{i + 1}.jpg")
+            image.save(image_path, 'JPEG')
+
+        img_file_lst = os.listdir(output_dir)
+        if len(img_file_lst)!=0:
+            page_wise_res = []
+            for image_file in img_file_lst:
+                result = image_to_text(output_dir,image_file,prompt_template)
+                page_wise_res.append(result)
+
+            if len(page_wise_res)>0:
+                final_dict = page_wise_res[0]
+                if not 'Tax Invoice' in final_dict:
+                    os.remove(upload_path) 
+                    return 'Tax Invoice Not Found In Invoice'
+                    # return jsonify({"error": "TAX INVOICE Not Found"}), 400
+                    # return jsonify({"success": False, "error": "TAX INVOICE Not Found."}), 400
+                elif not final_dict['buyers order number'].startswith('45'):
+                    os.remove(upload_path) 
+                    return 'Buyers number is not start with 45'
+                elif  len(final_dict['buyers order number']) != 10:
+                    os.remove(upload_path) 
+                    return 'Buyers number starts with 45 but length is not equal to 10'
+                
+                if 'material' in final_dict:
+                    material_lst = final_dict['material']
+                else:
+                    material_lst=[]
+                
+                for item in range(1,len(page_wise_res)):
+                    if 'material' in page_wise_res[item] and len(page_wise_res[item]['material'])>0 :
+                        material_lst.extend(page_wise_res[item]['material'])
+                final_dict['material'] = material_lst
+
+                df = pd.DataFrame(final_dict['material'])
+                df.drop_duplicates(inplace=True)
+                df = df[~df['sr no'].isna()]
+                final_dict['material'] = df.to_dict(orient='records')
+
+                # Send email with extracted data and PDF
+                email_sent = send_mail(final_dict, upload_path)
+
+                return final_dict
+            
+    elif pdf_path.endswith('jpg') or  pdf_path.endswith('png') :
+        print('in')
+        os.makedirs('Image_folder', exist_ok=True)
+        
+        # Step 2: Get the image file name from full path
+        image_name = os.path.basename(pdf_path)  # e.g., 'photo1.jpg'
+
+        # Step 3: Open the original image from its full path
+        img = Image.open(pdf_path)
+        print('img::',img)
+
+        # Step 4: Prepare the path to save it in 'Image_folder'
+        save_path = os.path.join('Image_folder', image_name)
+
+        # Step 5: Get the file extension for saving format
+        ext = image_name.split('.')[-1].upper()
+        if ext == 'JPG':
+            ext = 'JPEG'  # Pillow uses 'JPEG'
+
+        # Step 6: Save the image into the folder
+        img.save(save_path, format=ext)
+
+        img_file_lst = os.listdir('Image_folder')
+        result = image_to_text('Image_folder',img_file_lst[0],prompt_template)
+        os.remove(save_path)
+        if not 'Tax Invoice' in result:
+            os.remove(upload_path)
+            # return 'Tax Invoice Not Found In Image'
+            return jsonify({"error": "TAX INVOICE Not Found"}), 400
+        
+        elif not result['buyers order number'].startswith('45'):
+            os.remove(upload_path)
+            return 'Buyers number is not start with 45'
+        
+        elif  len(result['buyers order number']) != 10:
+            os.remove(upload_path)
+            return 'Buyers number starts with 45 but length is not equal to 10'
+        else:
+            return result
+       
+    else:
+        return "Please provide valid format: pdf, png and jpg"
+
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'pdfFile' not in request.files:
+        return jsonify({"success": False, "error": "No file part in request."})
+
+    file = request.files['pdfFile']
+    if file.filename == '':
+        return jsonify({"success": False, "error": "No file selected."})
+
+    file_path = os.path.join('uploads',file.filename)
+    filename = secure_filename(file.filename)
+    file.save(file_path)
+
+    # Encode PDF to base64 for preview
+    with open(file_path, "rb") as f:
+        encoded_pdf = base64.b64encode(f.read()).decode('utf-8')
+
+    return jsonify({
+        "success": True,
+        "message": "File uploaded successfully.",
+        "filename": filename,  # Needed later in /extract
+        "original_filename": file.filename,
+        "pdf_data": encoded_pdf  # For PDF viewer
+    })
+
+
+@app.route('/extract', methods=['POST'])
+def extract_data():
+    data = request.get_json()
+    filename = data.get('filename')
+    original_filename = data.get('original_filename')
+
+    if not filename:
+        return jsonify({"success": False, "error": "Filename is missing."})
+
+    upload_path = os.path.join(UPLOAD_FOLDER, original_filename)
+    if not os.path.exists(upload_path):
+        return jsonify({"success": False, "error": "Uploaded file not found."})
+
+    try:
+        # Extract text from PDF
+        result = pdf_to_text(upload_path,original_filename)
+
+        # Clean uploads folder after processing
+        for f in os.listdir(UPLOAD_FOLDER):
+            os.remove(upload_path)
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+    return jsonify({
+        "success": True,
+        "message": "Text extracted successfully.",
+        "data": result
+    })
+
+
+def send_mail(data, file_path):
+    try:
+        message = MIMEMultipart()
+        sender_email = 'mayurnandanwar@ghcl.co.in'
+        message["From"] = sender_email
+        receiver_email = 'mayurnandanwar@ghcl.co.in' 
+        message["To"] = receiver_email
+        message["Subject"] = "Extracted Information"
+        
+        json_string = json.dumps(data, indent=4)
+        body = "Extracted_Information: \n"+str(json_string)
+        message.attach(MIMEText(body, "plain"))
+        
+        with open(file_path, "rb") as file:
+            attachment = MIMEApplication(file.read(), Name=os.path.split(file_path)[1])
+            message.attach(attachment)
+        
+        password = os.getenv('email_password')
+        s = smtplib.SMTP('smtp.gmail.com', 587)
+        s.starttls()
+        s.login(sender_email, password)
+        s.sendmail(sender_email, receiver_email, message.as_string())
+        s.quit()
+        return True
+    except Exception as e:
+        return False
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+

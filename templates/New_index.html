@@ -1,0 +1,515 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Invoice Data Extractor</title>
+    <style>
+  /* Reset & Base */
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f2f5;
+    color: #1f2937;
+    padding: 10px;
+    line-height: 1.6;
+    margin-top: -20px;
+  }
+
+  /* Container */
+  .container {
+    max-width: 900px;
+    margin: 30px auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+    overflow: hidden;
+  }
+
+  /* Header */
+  .header {
+    background: #4f46e5;
+    background: radial-gradient(circle, #4f46e5, #7c3aed);
+    color: #fff;
+    text-align: center;
+    padding: 10px 20px;
+  }
+  .header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 8px;
+  }
+  .header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+  }
+
+  /* Content Padding */
+  .content {
+    padding: 10px;
+  }
+
+  /* File Upload UI */
+  .file-input-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 28px;
+    background: linear-gradient(135deg,#10b981,#059669);
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .file-input-wrapper:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16,185,129,0.3);
+  }
+  .file-input-wrapper input[type="file"] {
+    display: none;
+  }
+  .upload-info {
+    margin-top: 12px;
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
+
+  /* Preview & Results Containers */
+  .preview-section, .result-section {
+    display: none;
+    margin-top: 10px;
+  }
+  .section-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .section-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -6px;
+    width: 60px;
+    height: 3px;
+    background: #10b981;
+    border-radius: 2px;
+  }
+
+  /* File Viewer */
+  .pdf-viewer {
+    width: 100%;
+    height: 350px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    object-fit: contain;
+  }
+  .pdf-viewer img {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+  }
+  .loading {
+  display:inline-flex;
+  text-align: center;
+  padding: 5px;
+  font-size: 1rem;
+  color: #4b5563;
+    }
+
+.spinner {
+  border: 5px solid #e5e7eb;
+  border-top: 5px solid #4f46e5;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+
+  /* Buttons */
+  .submit-btn, .reset-btn, .download-btn {
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background .3s, transform .2s, box-shadow .2s;
+    margin: 6px 4px;
+  }
+  .submit-btn {
+    background: linear-gradient(135deg,#f59e0b,#d97706);
+    color: #fff;
+  }
+  .submit-btn:hover:not(:disabled) {
+    background: #d97706;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245,158,11,0.3);
+  }
+  .submit-btn:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+  }
+  .reset-btn {
+    background: #6b7280;
+    color: #fff;
+  }
+  .reset-btn:hover {
+    background: #4b5563;
+  }
+  .download-btn {
+    background: linear-gradient(135deg,#6366f1,#4f46e5);
+    color: #fff;
+  }
+  .download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99,102,241,0.3);
+  }
+  .loading-overlay .spinner {
+    border: 4px solid #e5e7eb;       /* lighter border thickness */
+    border-top: 4px solid #4f46e5;   /* colored border thickness */
+    border-radius: 50%;
+    width: 10px;                     /* smaller width */
+    height: 10px;                    /* smaller height */
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Messages */
+  .success-message, .error-message, #errorMsg {
+    padding: 14px 20px;
+    font-size: 0.95rem;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  .success-message {
+    background: #dcfce7;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+  }
+  .error-message,
+  #errorMsg {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    text-align: center;
+    animation: fadein 0.4s ease-in-out;
+  }
+  @keyframes fadein {
+    0% { opacity: 0; transform: translateY(-10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Data Preview */
+  .data-preview {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: #374151;
+    max-height: 300px;
+    overflow: auto;
+  }
+
+  /* Responsive */
+  @media(max-width: 768px) {
+    .container {
+      margin: 15px;
+      border-radius: 10px;
+    }
+    .header h1 {
+      font-size: 2.1rem;
+    }
+    .pdf-viewer {
+      height: 250px;
+    }
+    .submit-btn, .reset-btn, .download-btn {
+      width: 100%;
+      margin: 8px 0;
+    }
+  }
+</style>
+
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📄 Invoice Extractor</h1>
+      <p>Upload your PDF or image and extract structured data effortlessly</p>
+    </div>
+
+    <div class="content">
+      <!-- Upload Section -->
+      <div class="upload-section" id="uploadSection">
+        <label for="pdfFile" class="file-input-wrapper">
+          <input type="file" id="pdfFile" accept=".pdf,image/png,image/jpeg"/>
+          📁 Choose File
+        </label>
+        <div class="upload-info">
+          <p>Select a PDF or image (PNG/JPG) to preview and extract data</p>
+          <small>Supported formats: PDF, PNG, JPG</small>
+        </div>
+      </div>
+
+     
+
+      <!-- Preview Section -->
+      <div class="preview-section" id="previewSection">
+        <h2 class="section-title">📖 File Preview </h2>
+        <div id="fileViewer" class="pdf-viewer"></div>
+        <div id="errorMsg" style="display:none;"></div>
+        <div style="text-align: center;">
+            <div class="loading" id="loadingSection">
+                <div class="spinner"></div>
+            </div>
+          <button class="submit-btn" id="submitBtn">🚀 Extract Data</button>
+          <button class="reset-btn" id="resetBtn">🔄 Upload New File</button>
+        </div>
+      </div>
+
+      <!-- Results Section -->
+      <div class="result-section" id="resultSection">
+        <h2 class="section-title">✅ Extraction Results</h2>
+        <div id="messageContainer"></div>
+        <div class="data-preview" id="dataPreview"></div>
+        <div style="text-align: center;">
+          <button class="download-btn" id="downloadBtn" style="display: none;">
+            💾 Download JSON File
+          </button>
+          <button class="reset-btn" id="resetBtn2">🔄 Process Another File</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentFilename = null;
+    let savedFilename = null;
+    let currentOriginalFilename = null;
+    let currentFileType = null;
+
+    document.getElementById('pdfFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg'];
+      if (file && allowedTypes.includes(file.type)) {
+        currentFileType = file.type;
+        uploadPDF(file);
+      } else {
+        showError('Please select a valid PDF, PNG, or JPG file.');
+      }
+    });
+
+    document.getElementById('submitBtn').addEventListener('click', function() {
+      if (currentFilename) {
+        extractData();
+      }
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', resetForm);
+    document.getElementById('resetBtn2').addEventListener('click', resetForm);
+
+    document.getElementById('downloadBtn').addEventListener('click', function() {
+      if (savedFilename) {
+        window.open(`/download/${savedFilename}`, '_blank');
+      }
+    });
+
+    function uploadPDF(file) {
+      showLoading(true);
+      const formData = new FormData();
+      formData.append('pdfFile', file);
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        showLoading(false);
+        if (data.success) {
+          currentFilename = data.filename;
+          currentOriginalFilename = data.original_filename;
+          showFilePreview(data.pdf_data, currentFileType);
+          showSuccess(data.message);
+        } else {
+          showError(data.error || 'Upload failed');
+        }
+      })
+      .catch(error => {
+        showLoading(false);
+        showError('Upload failed: ' + error.message);
+      });
+    }
+
+    function extractData() {
+      showLoading(true);
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('errorMsg').style.display = 'none';
+
+    // Scroll to loading section so user sees it's processing
+    const loadingSection = document.getElementById('loadingSection');
+    loadingSection.scrollIntoView({ behavior: 'smooth' });
+
+      fetch('/extract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          filename: currentFilename,
+          original_filename: currentOriginalFilename
+        })
+      })
+      .then(async response => {
+        let data;
+        try {
+          data = await response.json();
+        } catch (e) {
+          data = { error: 'Invalid response from server.' };
+        }
+
+        showLoading(false);
+        document.getElementById('submitBtn').disabled = false;
+
+        if (!response.ok || data.success === false) {
+          showError(data.error || 'Extraction failed.');
+          return;
+        }
+
+        savedFilename = data.saved_file;
+        showResults(data, data.message);
+      })
+      .catch(error => {
+        showLoading(false);
+        document.getElementById('submitBtn').disabled = false;
+        showError('Extraction failed: ' + error.message);
+      });
+    }
+
+    function showFilePreview(fileData, fileType) {
+      const viewer = document.getElementById('fileViewer');
+      viewer.innerHTML = '';
+
+      if (fileType === 'application/pdf') {
+        const embed = document.createElement('embed');
+        embed.src = `data:application/pdf;base64,${fileData}`;
+        embed.type = 'application/pdf';
+        embed.className = 'pdf-viewer';
+        viewer.appendChild(embed);
+      } else if (fileType === 'image/png' || fileType === 'image/jpeg') {
+        const img = document.createElement('img');
+        img.src = `data:${fileType};base64,${fileData}`;
+        viewer.appendChild(img);
+      } else {
+        viewer.innerHTML = '<p>Unsupported file type.</p>';
+      }
+
+      document.getElementById('uploadSection').style.display = 'none';
+      document.getElementById('previewSection').style.display = 'block';
+      document.getElementById('resultSection').style.display = 'none';
+    }
+
+    function showResults(data, message) {
+      const messageContainer = document.getElementById('messageContainer');
+      const dataPreview = document.getElementById('dataPreview');
+      const emailIcon = data.email_sent ? "✅ 📧" : "❌ 📧";
+      const fullMessage = `${emailIcon} ${message}`;
+
+      messageContainer.innerHTML = `<div class="success-message">${fullMessage}</div>`;
+      dataPreview.innerHTML = `<pre>${JSON.stringify(data.data, null, 2)}</pre>`;
+      document.getElementById('downloadBtn').style.display = 'inline-block';
+      document.getElementById('resultSection').style.display = 'block';
+      document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function showSuccess(message) {
+      console.log('Success:', message);
+    }
+
+    function showError(message) {
+      const errorDiv = document.getElementById('errorMsg');
+      if (!errorDiv) {
+        alert(message);
+        return;
+      }
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+      errorDiv.scrollIntoView({ behavior: 'smooth' });
+      setTimeout(() => {
+        errorDiv.style.display = 'none';
+        errorDiv.textContent = '';
+      }, 8000);
+    }
+
+    function showLoading(show) {
+      document.getElementById('loadingSection').style.display = show ? 'block' : 'none';
+    }
+
+    
+      function clearUploadsFolder() {
+        console.log('🗑️ Attempting to clear uploads folder...');
+
+        return fetch('/clear-uploads', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+          .then(response => {
+            console.log('Clear uploads response status:', response.status);
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(data => {
+            console.log('Clear uploads response:', data);
+            if (data.success) {
+              console.log('✅ Uploads folder cleared successfully');
+            } else {
+              console.error('❌ Failed to clear uploads folder:', data.error);
+            }
+            return data;
+          })
+          .catch(error => {
+            console.error('❌ Error clearing uploads folder:', error);
+            return { success: false, error: error.message };
+          });
+      }
+
+
+    function resetForm() {
+      currentFilename = null;
+      savedFilename = null;
+      currentFileType = null;
+      clearUploadsFolder();
+
+      document.getElementById('pdfFile').value = '';
+      document.getElementById('uploadSection').style.display = 'block';
+      document.getElementById('previewSection').style.display = 'none';
+      document.getElementById('resultSection').style.display = 'none';
+      document.getElementById('loadingSection').style.display = 'none';
+      
+      const errorMessages = document.querySelectorAll('.error-message');
+      errorMessages.forEach(error => error.remove());
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>
